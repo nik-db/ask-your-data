@@ -82,7 +82,7 @@ def ask_ai_to_analyze(df, question):
             model=model_id,
             messages=[
                 {"role": "system", "content": "You are a data expert."},
-                {"role": "user", "content": f"This is my dataset:
+                {"role": "user", "content": f"This is my dataset:\
 {csv_str[:2000]}
 
 Now: {question}"}
