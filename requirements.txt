@@ -1,5 +1,5 @@
 streamlit
 pandas
 matplotlib
-openai>=1.0.0
-python-dotenv
+seaborn
+requests
