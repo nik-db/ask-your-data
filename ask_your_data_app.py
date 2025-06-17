@@ -1,50 +1,62 @@
-
+import os
 import streamlit as st
 import pandas as pd
-import openai
-import os
+import matplotlib.pyplot as plt
+from openai import OpenAI
+from dotenv import load_dotenv
 
-# --- Setup ---
+# Load environment variables
+load_dotenv()
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+client = OpenAI(api_key=OPENAI_API_KEY)
+
 st.set_page_config(page_title="Ask Your Data", layout="wide")
-st.title("📊 Ask Your Data - AI CSV Assistant")
 
-# Set your OpenAI API key here or load from secret manager if deployed
-openai.api_key = st.secrets["OPENAI_API_KEY"] if "OPENAI_API_KEY" in st.secrets else os.getenv("OPENAI_API_KEY")
+st.title("📊 Ask Your CSV Data (AI-Powered)")
+st.markdown("Upload your CSV file and ask questions in natural language.")
 
-# --- Upload CSV ---
-st.sidebar.header("1. Upload Your CSV")
-uploaded_file = st.sidebar.file_uploader("Choose a CSV file", type="csv")
+uploaded_file = st.file_uploader("Upload CSV", type=["csv"])
 
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
-    st.subheader("Preview of Your Data")
-    st.dataframe(df.head())
+    st.subheader("Data Preview")
+    st.dataframe(df.head(10), use_container_width=True)
 
-    st.sidebar.header("2. Ask a Question")
-    user_query = st.sidebar.text_area("Type your question (e.g. 'What is the average age?')")
+    question = st.text_input("Ask a question about your data:")
 
-    if st.sidebar.button("Submit Question"):
-        if user_query:
-            # Create prompt
-            prompt = f"You are a data assistant. Given the following dataframe:{df.head(20).to_string(index=False)} \
-            Answer this question: {user_query}\
-            Be concise."
-
-            # Get OpenAI response
+    if question:
+        with st.spinner("Thinking..."):
             try:
-                response = openai.ChatCompletion.create(
-                    model="gpt-3.5-turbo",
-                    messages=[
-                        {"role": "system", "content": "You are a helpful data analyst."},
-                        {"role": "user", "content": prompt}
-                    ]
+                prompt = f"""You are a data analyst. Given this pandas DataFrame:
+{df.head(20).to_string(index=False)}
+
+Answer this question based on the data above: {question}
+If possible, write Python code to generate a visualization (e.g., pie chart or bar chart).
+Only return the answer and code block. No extra explanation.
+"""
+
+                response = client.chat.completions.create(
+                    model="gpt-4",
+                    messages=[{
+                        "role": "user",
+                        "content": prompt
+                    }],
+                    temperature=0.3,
                 )
-                answer = response['choices'][0]['message']['content']
-                st.subheader("AI Response")
-                st.write(answer)
+
+                reply = response.choices[0].message.content
+                st.markdown("### 💬 AI Answer")
+                st.markdown(reply)
+
+                # Try to extract and run code from the response
+                import re
+                import io
+                code_blocks = re.findall(r"```python(.*?)```", reply, re.DOTALL)
+                if code_blocks:
+                    exec(code_blocks[0], {"df": df, "plt": plt, "st": st, "pd": pd})
+                else:
+                    st.info("No Python code detected in the response.")
+
             except Exception as e:
-                st.error(f"Error fetching AI response: {e}")
-        else:
-            st.warning("Please type a question before submitting.")
-else:
-    st.info("Please upload a CSV file to get started.")
+                st.error(f"Error: {e}")
