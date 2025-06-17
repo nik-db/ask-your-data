@@ -1,50 +1,59 @@
-
-import streamlit as st
 import pandas as pd
-import openai
+import matplotlib.pyplot as plt
+from openai import OpenAI
 import os
 
-# --- Setup ---
+# Initialize OpenAI client
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
 st.set_page_config(page_title="Ask Your Data", layout="wide")
-st.title("📊 Ask Your Data - AI CSV Assistant")
+st.title("Ask Your Data 📊🧠")
 
-# Set your OpenAI API key here or load from secret manager if deployed
-openai.api_key = st.secrets["OPENAI_API_KEY"] if "OPENAI_API_KEY" in st.secrets else os.getenv("OPENAI_API_KEY")
+st.markdown("""
+Upload a CSV file and ask questions in natural language about your data.
+This app will analyze the data and generate visualizations or answers using AI.
+""")
 
-# --- Upload CSV ---
-st.sidebar.header("1. Upload Your CSV")
-uploaded_file = st.sidebar.file_uploader("Choose a CSV file", type="csv")
+uploaded_file = st.file_uploader("Upload your CSV file", type=["csv"])
+
+def ask_ai_about_data(df, question):
+    prompt = f"""
+    You are a data analyst. The user uploaded this data:
+    {df.head(5).to_markdown()}
+
+    Based on this data, answer the following question:
+    {question}
+
+    If the question requests a chart or graph, suggest code using matplotlib.
+    """
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "You are a helpful data analyst."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        return f"Error fetching AI response: {e}"
 
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
-    st.subheader("Preview of Your Data")
+    st.write("### Preview of your data:")
     st.dataframe(df.head())
 
-    st.sidebar.header("2. Ask a Question")
-    user_query = st.sidebar.text_area("Type your question (e.g. 'What is the average age?')")
+    user_question = st.text_input("Ask a question about your data:")
+    if user_question:
+        st.write("AI is analyzing your question...")
+        response = ask_ai_about_data(df, user_question)
+        st.markdown("### AI Response:")
+        st.code(response, language='python')
 
-    if st.sidebar.button("Submit Question"):
-        if user_query:
-            # Create prompt
-            prompt = f"You are a data assistant. Given the following dataframe:{df.head(20).to_string(index=False)} \
-            Answer this question: {user_query}\
-            Be concise."
-
-            # Get OpenAI response
+        if "plt." in response:
             try:
-                response = openai.ChatCompletion.create(
-                    model="gpt-3.5-turbo",
-                    messages=[
-                        {"role": "system", "content": "You are a helpful data analyst."},
-                        {"role": "user", "content": prompt}
-                    ]
-                )
-                answer = response['choices'][0]['message']['content']
-                st.subheader("AI Response")
-                st.write(answer)
+                exec(response, {"df": df, "plt": plt})
+                st.pyplot(plt)
             except Exception as e:
-                st.error(f"Error fetching AI response: {e}")
-        else:
-            st.warning("Please type a question before submitting.")
-else:
-    st.info("Please upload a CSV file to get started.")
+                st.error(f"Error generating chart: {e}")
