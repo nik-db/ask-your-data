@@ -85,3 +85,17 @@ if file:
                 st.error(f"Error: {response.status_code} - {response.text}")
 else:
     st.info("Please upload a CSV file to get started.")
+
+import streamlit as st
+
+st.markdown(
+    """
+    <div style="text-align: center; margin-top: 30px;">
+        <a href="https://www.buymeacoffee.com/databite" target="_blank">
+            <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;">
+        </a>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
