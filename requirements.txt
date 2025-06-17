@@ -1,5 +1,6 @@
 streamlit
 pandas
 matplotlib
-openrouter
-requests
+seaborn
+openai
+python-dotenv
