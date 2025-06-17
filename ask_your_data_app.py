@@ -6,132 +6,127 @@ import openai
 import io
 import os
 from dotenv import load_dotenv
+from PIL import Image
 
 # Load environment variables
 load_dotenv()
 
-st.set_page_config(page_title="Ask Your Data", layout="wide")
+# Set up OpenAI API key
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
-# -- Styling: Custom Buy Me Coffee icon, Toast Message, and Analytics --
+# App title and branding
+st.set_page_config(page_title="Ask Your Data", page_icon="📊")
+st.title("📊 Ask Your Data")
 st.markdown("""
-    <style>
-        .bmc-icon {
-            position: fixed;
-            top: 60px;
-            right: 20px;
-            z-index: 1000;
-            background-color: transparent;
-            border-radius: 50%;
-            box-shadow: none;
-            transition: all 0.3s ease;
-        }
-        .bmc-icon img {
-            height: 48px;
-            width: 48px;
-            border-radius: 50%;
-        }
-        .bmc-icon:hover {
-            transform: scale(1.1);
-        }
-        .support-toast {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            background-color: #f9f9f9;
-            padding: 14px 20px;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            font-size: 14px;
-            z-index: 999;
-        }
-        @media only screen and (max-width: 600px) {
-            .bmc-icon {
-                top: 55px;
-                right: 15px;
-            }
-            .support-toast {
-                right: 10px;
-                bottom: 20px;
-                font-size: 13px;
-            }
-        }
-    </style>
-    <a class="bmc-icon" href="https://coff.ee/databite" target="_blank" title="Buy Me a Coffee">
-        <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee">
-    </a>
-    <div class="support-toast">❤️ Like the tool? <a href="https://coff.ee/databite" target="_blank">Support us here</a></div>
+Welcome to **Ask Your Data**, an interactive tool to explore your CSV data using natural language queries.
 
-    <!-- Analytics Tracking -->
-    <script>
-        document.querySelector('.bmc-icon').addEventListener('click', function() {
-            fetch("https://ask-your-data.streamlit.app/track-click", {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({event: "bmc_clicked"})
-            });
-        });
-    </script>
-""", unsafe_allow_html=True)
+Upload a CSV file, ask questions like:
+- "What is the average age of passengers?"
+- "Can you draw a pie chart of age groups?"
+- "Show a heatmap of correlation."
 
-# Title
-st.title("🔍 Ask Your Data with AI")
-st.write("Upload your CSV file and ask natural language questions about your data. Great for exploring data quickly!")
+Get instant AI-generated answers and visualizations!
+""")
 
-# File upload
+# Upload CSV
+data = None
 uploaded_file = st.file_uploader("Upload your CSV file", type=["csv"])
+if uploaded_file is not None:
+    data = pd.read_csv(uploaded_file)
+    st.success("CSV uploaded successfully!")
+    st.dataframe(data.head())
 
-# Chat model
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+# Ask a question
+def ask_question(question, df):
+    df_head = df.head(10).to_csv(index=False)
+    prompt = f"""
+You are a data analyst AI. The user has uploaded the following dataset sample:
+{df_head}
 
-# Ensure API Key is set
-if not OPENROUTER_API_KEY:
-    st.error("Please set your OPENROUTER_API_KEY in the environment variables.")
-    st.stop()
+Based on the dataset, answer this question or create the requested visualization:
+"{question}"
 
-# Load and display dataset
-if uploaded_file:
-    df = pd.read_csv(uploaded_file)
-    st.write("### Preview of your data")
-    st.dataframe(df.head())
+If it's a chart request, explain and write Python code using pandas/matplotlib/seaborn.
+"""
 
+    response = openai.ChatCompletion.create(
+        model="gpt-4",
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return response.choices[0].message['content']
+
+if data is not None:
     question = st.text_input("Ask a question about your data")
-
     if st.button("Ask") and question:
-        prompt = f"""
-        You are a data analyst assistant. Use the following dataset:
-        {df.head(50).to_csv(index=False)}
+        with st.spinner("Thinking..."):
+            try:
+                answer = ask_question(question, data)
+                st.markdown("**Answer:**")
+                st.markdown(answer)
 
-        Now answer this question:
-        {question}
+                if "```python" in answer:
+                    code = answer.split("```python")[-1].split("```")[0]
+                    with st.expander("See generated code"):
+                        st.code(code, language="python")
+                    exec_globals = {"df": data, "plt": plt, "sns": sns}
+                    exec(code, exec_globals)
+                    st.pyplot(plt)
+            except Exception as e:
+                st.error(f"Error: {e}")
 
-        If it involves plotting, use matplotlib and return only Python code to generate the plot.
-        If it's textual, give the short summary.
-        """
+# Optional: Add predefined visualizations
+if data is not None:
+    st.subheader("🔍 Quick Visualizations")
+    chart_type = st.selectbox("Choose a chart type", ["Pie Chart", "Bar Chart", "Heatmap"])
 
-        headers = {
-            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-            "Content-Type": "application/json"
-        }
-
-        import requests
-        response = requests.post("https://openrouter.ai/api/v1/chat/completions", json={
-            "model": "openchat/openchat-3.5-0106",
-            "messages": [{"role": "user", "content": prompt}]
-        }, headers=headers)
-
-        if response.status_code == 200:
-            result = response.json()
-            reply = result["choices"][0]["message"]["content"]
-            if "```python" in reply:
-                code = reply.split("```python")[1].split("```")[0]
-                st.code(code, language="python")
-                try:
-                    exec(code)
-                except Exception as e:
-                    st.error(f"Error running code: {e}")
-            else:
-                st.markdown(reply)
+    if chart_type == "Pie Chart":
+        col = st.selectbox("Select column for pie chart", data.columns)
+        if data[col].nunique() < 20:
+            fig, ax = plt.subplots()
+            data[col].value_counts().plot.pie(autopct='%1.1f%%', ax=ax)
+            ax.set_ylabel("")
+            st.pyplot(fig)
         else:
-            st.error(f"Error: {response.status_code} - {response.text}")
-else:
-    st.info("Please upload a CSV file to get started.")
+            st.warning("Too many unique values for a pie chart.")
+
+    elif chart_type == "Bar Chart":
+        col = st.selectbox("Select column for bar chart", data.columns)
+        fig, ax = plt.subplots()
+        data[col].value_counts().plot(kind='bar', ax=ax)
+        st.pyplot(fig)
+
+    elif chart_type == "Heatmap":
+        if data.select_dtypes(include=['number']).shape[1] >= 2:
+            fig, ax = plt.subplots(figsize=(10, 6))
+            sns.heatmap(data.corr(), annot=True, cmap="coolwarm", ax=ax)
+            st.pyplot(fig)
+        else:
+            st.warning("Need at least two numeric columns for heatmap.")
+
+# Support button
+st.markdown("""
+<style>
+.bmc-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: transparent;
+  border: none;
+}
+.bmc-button img {
+  width: 40px;
+}
+</style>
+<a class="bmc-button" href="https://coff.ee/databite" target="_blank">
+  <img src="https://cdn-icons-png.flaticon.com/512/2404/2404269.png" alt="Buy me a coffee">
+</a>
+<script>
+  const coffeeIcon = document.querySelector('.bmc-button');
+  if (window.innerWidth < 768) {
+    coffeeIcon.style.position = 'fixed';
+    coffeeIcon.style.bottom = '10px';
+    coffeeIcon.style.right = '10px';
+    coffeeIcon.style.top = 'unset';
+  }
+</script>
+""", unsafe_allow_html=True)
