@@ -88,14 +88,34 @@ else:
 
 import streamlit as st
 
-st.markdown(
-    """
-    <div style="text-align: center; margin-top: 30px;">
-        <a href="https://www.buymeacoffee.com/databite" target="_blank">
-            <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;">
-        </a>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+st.markdown("""
+    <style>
+        .bmc-icon {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            z-index: 1000;
+            background-color: #f9c846;
+            color: black;
+            padding: 10px 14px;
+            border-radius: 50%;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            font-size: 20px;
+            font-weight: bold;
+            text-align: center;
+            text-decoration: none;
+        }
+        @media only screen and (max-width: 600px) {
+            .bmc-icon {
+                top: 10px;
+                right: 10px;
+                padding: 10px 14px;
+                font-size: 18px;
+            }
+        }
+    </style>
+    <a class="bmc-icon" href="https://coff.ee/databite" target="_blank" title="Buy Me a Coffee">
+        ☕
+    </a>
+""", unsafe_allow_html=True)
 
