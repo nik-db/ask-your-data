@@ -1,31 +1,23 @@
-# Ask Your Data
 
-A lightweight Streamlit app that lets users interact with their own CSV data using AI-powered queries.
+# Ask Your Data 📊🤖
+
+Ask questions about your CSV files using AI and visualize them instantly.
 
 ## Features
+- Upload any CSV and ask natural language questions
+- Get smart AI-powered answers using OpenRouter (OpenAI-compatible)
+- Auto-generate visual insights: pie chart, bar graph, heatmap
+- Mobile-responsive UI
+- Monetization with BuyMeACoffee integration
 
-- Upload your CSV data
-- Ask questions in plain English (e.g., "Show me a pie chart of age distribution")
-- Get AI-generated insights and charts
-- Mobile-friendly UI
-- Support the project with a Buy Me a Coffee link
-
-## How to Run
+## Run Locally
 
 ```bash
 pip install -r requirements.txt
-streamlit run ask_your_data_app.py
+streamlit run app.py
 ```
 
-## Buy Me a Coffee
-
-If you like the project, you can support us here:
-👉 [https://coff.ee/databite](https://coff.ee/databite)
-
-## Live Demo
-
-👉 [Streamlit App](https://ask-your-data.streamlit.app/)
-
-## License
-
-MIT
+## Sample Question Ideas
+- What is the average fare by class?
+- Draw a pie chart for age groups.
+- Plot survival rate by gender.
