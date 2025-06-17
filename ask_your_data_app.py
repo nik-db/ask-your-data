@@ -25,8 +25,8 @@ if uploaded_file:
             try:
                 response = openai.ChatCompletion.create(
                     model="openchat/openchat-3.5-0106",
-                    messages=[{"role": "user", "content": f"Answer this based on CSV: {question}
-{df.head(100).to_csv(index=False)}"}],
+                    messages=[{"role": "user", "content": f"Answer this based on CSV: {question}\
+                    {df.head(100).to_csv(index=False)}"}],
                     base_url="https://openrouter.ai/api/v1"
                 )
                 st.write(response['choices'][0]['message']['content'])
