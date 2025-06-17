@@ -67,7 +67,7 @@ if file:
                 "X-Title": "AskYourCSV"
             }
             data = {
-                "model": "openchat/openchat-3.5-0106",
+                "model": "mistralai/mistral-7b-instruct",
                 "messages": [
                     {"role": "system", "content": "You are a helpful data expert."},
                     {"role": "user", "content": prompt}
