@@ -32,17 +32,66 @@ _*(Replace this with your actual app link after deployment)*_
 ```bash
 git clone https://github.com/your-username/ask-your-data-ai.git
 cd ask-your-data-ai
+```
 
-**### 2. Install dependencies**
+### 2. Install dependencies
+
 We recommend using a virtual environment:
-bash
+
+```bash
 pip install -r requirements.txt
+```
 
-**### 3. Add your OpenAI API key**
-Create a .streamlit/secrets.toml file:
-toml
+### 3. Add your OpenAI API key
+
+Create a `.streamlit/secrets.toml` file:
+
+```toml
 OPENAI_API_KEY = "your-openai-api-key"
+```
 
-**### 4. Run the app**
-bash
+### 4. Run the app
+
+```bash
 streamlit run ask_your_data_app.py
+```
+
+---
+
+## 🔐 Streamlit Cloud Setup
+
+If deploying on Streamlit Cloud:
+1. Push your code to a **public GitHub repo**
+2. Go to [streamlit.io/cloud](https://streamlit.io/cloud) and connect the repo
+3. Set `OPENAI_API_KEY` in **Secrets**
+4. Launch and share your app 🚀
+
+---
+
+## 📦 Sample Data
+
+You can use this sample dataset to test:  
+[Download sample_orders.csv](https://people.sc.fsu.edu/~jburkardt/data/csv/hw_200.csv)
+
+Or bring your own CSV!
+
+---
+
+## 🧠 Powered By
+
+- [OpenAI GPT-4](https://openai.com)
+- [Pandas](https://pandas.pydata.org/)
+- [Streamlit](https://streamlit.io)
+
+---
+
+## 🙌 Credits
+
+Built by [Your Name]  
+Let me know your feedback or feature ideas!
+
+---
+
+## 📄 License
+
+MIT License – use freely, improve openly.
