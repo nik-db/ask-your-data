@@ -1,21 +1,24 @@
+
 # Ask Your Data
 
-A simple Streamlit web app that allows users to upload CSV files and query the data using natural language. AI suggests visualizations like pie charts, bar graphs, and heatmaps.
+Upload your dataset and ask questions in plain English. Visualize insights instantly using AI.
 
 ## Features
-- Upload your own dataset (CSV)
-- Use demo data
-- Ask AI to suggest visualization
-- Draw charts interactively
+- Upload CSV or XLSX
+- Use OpenRouter AI (e.g., Mistral-7B)
+- Draw pie, bar, or heatmap charts
+- AI-assisted Q&A on data
+- Google Analytics ready
+- Always-visible Buy Me Coffee support
+- Hosted on Streamlit
 
 ## Setup
+
 ```bash
 pip install -r requirements.txt
 streamlit run app.py
 ```
 
-## Live Demo
-https://ask-your-data.streamlit.app
-
 ## Support
-[Buy Me a Coffee ☕](https://coff.ee/databite)
+
+Buy me a coffee: [https://coff.ee/databite](https://coff.ee/databite)

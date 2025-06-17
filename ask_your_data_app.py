@@ -1,98 +1,133 @@
+
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import openai
 import io
 import os
+import openai
 from dotenv import load_dotenv
 
+# Load environment variables
 load_dotenv()
+
+# Configure OpenRouter model
 openai.api_key = os.getenv("OPENROUTER_API_KEY")
 openai.api_base = "https://openrouter.ai/api/v1"
+model_id = "mistralai/mistral-7b-instruct"
 
 st.set_page_config(page_title="Ask Your Data", layout="wide")
 
-# Load sample dataset
-@st.cache_data
+# Sidebar: Upload CSV, XLSX, or PDF
+st.sidebar.title("Upload Your File")
+uploaded_file = st.sidebar.file_uploader("Choose a CSV, XLSX, or PDF file", type=["csv", "xlsx", "pdf"])
+
+# Load sample data
 def load_sample_data():
-    return pd.read_csv("sample_data.csv")
+    return pd.read_csv("https://raw.githubusercontent.com/datasciencedojo/datasets/master/titanic.csv")
 
-def draw_chart(df, chart_type, column=None):
-    if chart_type == "Pie Chart" and column:
-        data = df[column].value_counts()
-        plt.figure(figsize=(6,6))
-        plt.pie(data, labels=data.index, autopct='%1.1f%%')
-        st.pyplot(plt)
-    elif chart_type == "Bar Chart" and column:
-        data = df[column].value_counts()
-        plt.figure(figsize=(8,4))
-        sns.barplot(x=data.index, y=data.values)
-        st.pyplot(plt)
-    elif chart_type == "Heatmap":
-        plt.figure(figsize=(10,6))
-        sns.heatmap(df.corr(numeric_only=True), annot=True, cmap='coolwarm')
-        st.pyplot(plt)
-    else:
-        st.warning("Chart type or column not specified properly.")
+# Google Analytics (just place the GA code snippet if using custom deployment)
+st.markdown("""
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXX"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-XXXXXXX');
+</script>
+""", unsafe_allow_html=True)
 
-def ask_ai(question, df):
-    prompt = f"""You are a data assistant. Based on this question: '{question}' and dataset columns: {list(df.columns)}, tell what chart type is best (Pie Chart, Bar Chart, Heatmap) and which column to use if needed. 
-    Reply as JSON with keys 'chart_type' and 'column'.
-    """
+# Always visible Buy Me Coffee icon
+st.markdown("""
+<style>
+#bmc-button {
+  position: fixed;
+  top: 10px;
+  right: 20px;
+  z-index: 9999;
+}
+</style>
+<div id="bmc-button">
+<a href="https://coff.ee/databite" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="40"></a>
+</div>
+""", unsafe_allow_html=True)
 
+# About section
+with st.sidebar.expander("About"):
+    st.write("**DataBite** is a smart assistant for data exploration. Upload your data and ask questions in plain English!")
+
+# Draw chart
+def draw_chart(df, chart_type, column):
+    if column not in df.columns:
+        st.warning("Selected column not found in the dataset.")
+        return
+    plt.figure(figsize=(10, 5))
+    if chart_type == "pie":
+        df[column].value_counts().plot.pie(autopct="%1.1f%%")
+    elif chart_type == "bar":
+        df[column].value_counts().plot.bar()
+    elif chart_type == "heatmap":
+        sns.heatmap(df.corr(), annot=True, cmap="coolwarm")
+    st.pyplot(plt.gcf())
+
+# AI chart parsing
+def ask_ai_to_analyze(df, question):
     try:
-        response = openai.chat.completions.create(
-            model="openchat/openchat-3.5-0106",
-            messages=[{"role": "user", "content": prompt}]
+        csv_buffer = io.StringIO()
+        df.to_csv(csv_buffer, index=False)
+        csv_str = csv_buffer.getvalue()
+
+        response = openai.ChatCompletion.create(
+            model=model_id,
+            messages=[
+                {"role": "system", "content": "You are a data expert."},
+                {"role": "user", "content": f"This is my dataset:
+{csv_str[:2000]}
+
+Now: {question}"}
+            ]
         )
-        content = response.choices[0].message.content.strip()
-        result = eval(content)  # Assuming response is a dict-like string
-        return result.get("chart_type"), result.get("column")
+        return response['choices'][0]['message']['content']
     except Exception as e:
-        st.error(f"Error fetching AI response: {e}")
-        return None, None
+        return f"Error: {e}"
 
-# --- UI ---
-st.title("Ask Your Data 📊")
-st.markdown("Upload a CSV file and ask questions or visualize data using built-in tools.")
-
-uploaded_file = st.file_uploader("Upload your CSV file", type=["csv"])
-use_sample = st.button("Or Try Demo Dataset")
-
-if use_sample:
-    df = load_sample_data()
-    st.success("Sample dataset loaded.")
-elif uploaded_file:
-    df = pd.read_csv(uploaded_file)
-else:
-    df = None
-
-if df is not None:
-    st.subheader("Data Preview")
-    st.dataframe(df.head())
-
-    st.sidebar.markdown("### Visual Exploration")
-    categorical_cols = df.select_dtypes(include='object').columns.tolist()
-    numeric_cols = df.select_dtypes(include='number').columns.tolist()
-
-    chart_type = st.sidebar.selectbox("Choose Chart Type", ["Pie Chart", "Bar Chart", "Heatmap"])
-    column = None
-    if chart_type != "Heatmap":
-        column = st.sidebar.selectbox("Choose Column", df.columns)
-
-    if st.sidebar.button("Draw Chart"):
-        draw_chart(df, chart_type, column)
-
-    st.subheader("Ask Anything About the Data")
-    question = st.text_input("Ask a question (e.g., 'Draw pie chart of age group')")
-    if st.button("Ask AI"):
-        chart_type, column = ask_ai(question, df)
-        if chart_type:
-            st.success(f"Drawing {chart_type} using column: {column}")
-            draw_chart(df, chart_type, column)
+# Main logic
+if uploaded_file is not None:
+    try:
+        if uploaded_file.name.endswith(".csv"):
+            df = pd.read_csv(uploaded_file)
+        elif uploaded_file.name.endswith(".xlsx"):
+            df = pd.read_excel(uploaded_file)
+        elif uploaded_file.name.endswith(".pdf"):
+            st.error("PDF reading not yet supported. Please use CSV/XLSX.")
+            st.stop()
         else:
-            st.warning("Could not interpret the question.")
+            st.error("Unsupported file format.")
+            st.stop()
+    except Exception as e:
+        st.error(f"Failed to read file: {e}")
+        st.stop()
+else:
+    st.info("Using demo Titanic dataset. Upload your own for full functionality.")
+    df = load_sample_data()
 
-    st.markdown("---")
-    st.markdown("Support us ☕ [Buy Me a Coffee](https://coff.ee/databite)")
+# Show data
+st.subheader("📊 Data Preview")
+st.dataframe(df.head())
+
+# Sidebar Chart Options
+st.sidebar.title("Draw Chart")
+chart_type = st.sidebar.selectbox("Chart Type", ["pie", "bar", "heatmap"])
+column = st.sidebar.selectbox("Select Column", df.columns)
+
+if st.sidebar.button("Draw Chart"):
+    draw_chart(df, chart_type, column)
+
+# Ask AI section
+st.subheader("🧠 Ask Your Data")
+question = st.text_input("Ask a question about your data")
+if st.button("Get Insight"):
+    with st.spinner("Analyzing..."):
+        output = ask_ai_to_analyze(df, question)
+        st.write(output)
