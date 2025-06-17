@@ -26,10 +26,9 @@ if uploaded_file:
     if st.sidebar.button("Submit Question"):
         if user_query:
             # Create prompt
-            prompt = f"You are a data assistant. Given the following dataframe:
-{df.head(20).to_string(index=False)}
-Answer this question: {user_query}
-Be concise."
+            prompt = f"You are a data assistant. Given the following dataframe:{df.head(20).to_string(index=False)} \
+            Answer this question: {user_query}\
+            Be concise."
 
             # Get OpenAI response
             try:
