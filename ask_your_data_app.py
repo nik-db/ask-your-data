@@ -5,6 +5,7 @@ import seaborn as sns
 import os
 import openai
 from dotenv import load_dotenv
+from openai import OpenAI
 
 # Load environment variables
 load_dotenv()
@@ -12,6 +13,7 @@ load_dotenv()
 # Use OpenRouter API
 openai.api_key = os.getenv("OPENROUTER_API_KEY")
 openai.api_base = "https://openrouter.ai/api/v1"
+client = OpenAI(api_key=os.getenv("OPENROUTER_API_KEY"), base_url="https://openrouter.ai/api/v1")
 
 # Page setup
 st.set_page_config(page_title="Ask Your Data", layout="wide")
@@ -63,7 +65,7 @@ if df is not None:
     question = st.text_input("Enter your question")
     if question:
         try:
-            response = openai.chat.completions.create(
+            response = client.chat.completions.create(
                 model="mistralai/mistral-7b-instruct",
                 messages=[
                     {"role": "system", "content": "You are a helpful data assistant."},
