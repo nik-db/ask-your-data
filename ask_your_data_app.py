@@ -3,85 +3,84 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
-from dotenv import load_dotenv
 import openai
+from dotenv import load_dotenv
 
-# Load API key
-api_key = os.getenv("OPENROUTER_API_KEY")
-openai.api_key = api_key
+# Load environment variables
+load_dotenv()
+
+# Use OpenRouter API
+openai.api_key = os.getenv("OPENROUTER_API_KEY")
 openai.api_base = "https://openrouter.ai/api/v1"
 
-model_id = "mistralai/mistral-7b-instruct"
-
+# Page setup
 st.set_page_config(page_title="Ask Your Data", layout="wide")
-
 st.title("📊 Ask Your Data")
-st.markdown("Upload your CSV file or try the sample Titanic dataset.")
 
-# DataFrame persistence
-if 'df' not in st.session_state:
-    st.session_state.df = None
+# Sidebar file uploader and sample data
+st.sidebar.header("Upload or Try Sample")
+uploaded_file = st.sidebar.file_uploader("Upload your CSV file", type="csv")
+sample_data = st.sidebar.button("Try Sample Data")
 
-def load_sample():
-    st.session_state.df = pd.read_csv("https://raw.githubusercontent.com/datasciencedojo/datasets/master/titanic.csv")
+# Load data
+if sample_data:
+    df = pd.read_csv("https://raw.githubusercontent.com/datasciencedojo/datasets/master/titanic.csv")
+    st.session_state["df"] = df
+elif uploaded_file:
+    df = pd.read_csv(uploaded_file)
+    st.session_state["df"] = df
+elif "df" in st.session_state:
+    df = st.session_state["df"]
+else:
+    df = None
 
-uploaded_file = st.file_uploader("Upload CSV", type=["csv"])
-
-col1, col2 = st.columns([1, 2])
-with col1:
-    if st.button("Try Sample Data"):
-        load_sample()
-
-if uploaded_file is not None:
-    st.session_state.df = pd.read_csv(uploaded_file)
-
-df = st.session_state.df
-
+# Display data preview
 if df is not None:
-    st.subheader("Preview of your Data")
+    st.subheader("📁 Data Preview")
     st.dataframe(df.head())
 
-    st.markdown("## 📈 Visualize Data")
-    chart_type = st.selectbox("Select Chart Type", ["Pie Chart", "Bar Chart", "Heatmap"])
-    column = st.selectbox("Select Column", df.columns)
+    st.sidebar.header("📊 Visualize Data")
+    chart_type = st.sidebar.selectbox("Choose a chart type", ["None", "Bar", "Pie", "Heatmap"])
+    column = st.sidebar.selectbox("Select column", df.columns)
 
-    if st.button("Generate Chart"):
-        if chart_type == "Pie Chart":
-            st.write(df[column].value_counts().plot.pie(autopct='%1.1f%%'))
-            st.pyplot()
-        elif chart_type == "Bar Chart":
-            st.write(df[column].value_counts().plot.bar())
-            st.pyplot()
+    if chart_type != "None" and column:
+        st.subheader(f"{chart_type} chart for {column}")
+        if chart_type == "Bar":
+            st.bar_chart(df[column].value_counts())
+        elif chart_type == "Pie":
+            fig, ax = plt.subplots()
+            df[column].value_counts().plot.pie(autopct="%1.1f%%", ax=ax)
+            ax.set_ylabel("")
+            st.pyplot(fig)
         elif chart_type == "Heatmap":
-            st.write(sns.heatmap(df.corr(), annot=True))
-            st.pyplot()
+            numeric_df = df.select_dtypes(include=["float64", "int64"])
+            fig, ax = plt.subplots()
+            sns.heatmap(numeric_df.corr(), annot=True, cmap="coolwarm", ax=ax)
+            st.pyplot(fig)
 
-    st.markdown("## 🤖 Ask AI About Your Data")
-    user_query = st.text_input("Ask your question:")
-    if user_query and api_key:
+    # AI Section
+    st.subheader("💬 Ask AI about your data")
+    question = st.text_input("Enter your question")
+    if question:
         try:
             response = openai.chat.completions.create(
-                model=model_id,
-                messages=[{"role": "user", "content": f"{user_query}\
-{df.head(20).to_string()}"}],
+                model="mistralai/mistral-7b-instruct",
+                messages=[
+                    {"role": "system", "content": "You are a helpful data assistant."},
+                    {"role": "user", "content": f"{question}\n\nData:\n{df.head(20).to_csv(index=False)}"}
+                ]
             )
             st.write("AI Response:")
             st.write(response.choices[0].message.content)
         except Exception as e:
             st.error(f"AI Error: {e}")
-    elif user_query and not api_key:
-        st.error("API Key not set. Please configure OPENROUTER_API_KEY in Streamlit secrets.")
 
-# BuyMeCoffee Button
-st.markdown(
-    '''
-    <div style="text-align:right">
-        <a href="https://coff.ee/databite" target="_blank">
-            <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" 
-                 alt="Buy Me A Coffee" 
-                 style="height: 40px !important;width: 145px !important;" >
-        </a>
-    </div>
-    ''',
+# Sidebar support section
+st.sidebar.markdown("---")
+st.sidebar.markdown("### ☕ Support Us")
+st.sidebar.markdown(
+    "[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-%23FFDD00?logo=buy-me-a-coffee&logoColor=black&style=for-the-badge)](https://coff.ee/databite)",
     unsafe_allow_html=True
 )
+st.sidebar.markdown("---")
+st.sidebar.markdown("**Made with ❤️ by DataBite**")
