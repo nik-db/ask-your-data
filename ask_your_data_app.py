@@ -13,7 +13,7 @@ load_dotenv()
 # Use OpenRouter API
 # openai.api_key = os.getenv("OPENROUTER_API_KEY")
 # openai.api_base = "https://openrouter.ai/api/v1"
-client = OpenAI(api_key=st.secrets["OPENROUTER_API_KEY"], base_url="https://openrouter.ai/api/v1")
+client = OpenAI(api_key=st.secrets["OPENROUTER_API_KEY"].strip().replace('"', ''), base_url="https://openrouter.ai/api/v1")
 
 # Page setup
 st.set_page_config(page_title="Ask Your Data", layout="wide")
