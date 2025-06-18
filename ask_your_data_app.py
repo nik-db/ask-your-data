@@ -62,8 +62,7 @@ if df is not None:
         try:
             response = openai.chat.completions.create(
                 model=model_id,
-                messages=[{"role": "user", "content": f"{user_query}
-
+                messages=[{"role": "user", "content": f"{user_query}\
 {df.head(20).to_string()}"}],
             )
             st.write("AI Response:")
