@@ -1,26 +1,25 @@
-
 # Ask Your Data
 
-A browser-based AI-powered CSV analysis tool built using Streamlit.
+Upload your CSV and explore it with visual charts or ask an AI any question about your data.
 
 ## Features
-- Upload your own CSV or try the sample
-- Ask questions to AI (powered by OpenRouter Mistral)
-- Auto-detect chart types: Pie, Bar, Heatmap
-- Dropdown column selection
-- Light branding + BuyMeCoffee
+
+- Upload or use sample data
+- Select chart type: Pie, Bar, Heatmap
+- Ask AI about data (uses OpenRouter + Mistral model)
+- "Buy Me a Coffee" support button
 
 ## Setup
 
-```bash
-pip install -r requirements.txt
-streamlit run app.py
+1. Clone the repo
+2. Add your OpenRouter API key to Streamlit secrets:
+
+```
+OPENROUTER_API_KEY = "your-api-key"
 ```
 
-## Demo
+3. Run the app:
 
-[Live App](https://ask-your-data.streamlit.app)
-
-## Support
-
-[☕ Buy Me a Coffee](https://coff.ee/databite)
+```bash
+streamlit run app.py
+```
