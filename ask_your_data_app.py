@@ -72,8 +72,8 @@ if df is not None:
         else:
             try:
                 csv_preview = df.head(20).to_csv(index=False)
-                prompt = f"You are a data analyst. Dataset:
-{csv_preview}
+                prompt = f"You are a data analyst. Dataset:\
+{csv_preview}\
 User question: {user_question}"
                 response = openai.chat.completions.create(
                     model=model_id,
